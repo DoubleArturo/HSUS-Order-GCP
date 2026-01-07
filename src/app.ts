@@ -1,0 +1,25 @@
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import orderRoutes from './routes/orderRoutes.js';
+import shipmentRoutes from './routes/shipmentRoutes.js';
+import { errorHandler } from './middlewares/errorHandler.js';
+
+dotenv.config();
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+app.use('/api/v1/orders', orderRoutes);
+app.use('/api/v1/shipments', shipmentRoutes);
+
+app.use(errorHandler);
+
+const port = process.env.PORT || 8080;
+
+app.listen(port, () => {
+  // eslint-disable-next-line no-console
+  console.log(`Server listening on port ${port}`);
+});
