@@ -43,3 +43,4 @@ CREATE TABLE shipments (
 );
 
 CREATE INDEX idx_shipments_order_id ON shipments(order_id);
+
