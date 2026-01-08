@@ -4,7 +4,7 @@
  */
 
 import dotenv from 'dotenv';
-import { pool } from '../lib/db.js';
+import { pool } from '../config/db.js';
 import { BolService } from '../services/BolService.js';
 
 dotenv.config();

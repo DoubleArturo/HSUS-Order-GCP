@@ -1,4 +1,4 @@
-import { pool } from '../lib/db.js';
+import { pool } from '../config/db.js';
 
 interface Order {
     id: string;
