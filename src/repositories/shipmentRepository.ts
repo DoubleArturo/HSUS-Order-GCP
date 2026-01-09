@@ -1,3 +1,4 @@
+import { PoolClient } from 'pg';
 import { pool } from '../config/db.js';
 import { Shipment, ShipmentItem } from '../types/database.js';
 
@@ -9,8 +10,9 @@ export interface NewShipment {
   items: ShipmentItem[];
 }
 
-export const insertShipment = async (payload: NewShipment): Promise<Shipment> => {
-  const result = await pool.query<Shipment>(
+export const insertShipment = async (payload: NewShipment, client?: PoolClient): Promise<Shipment> => {
+  const db = client || pool;
+  const result = await db.query<Shipment>(
     `INSERT INTO shipments (order_id, tracking_number, carrier, shipped_at, items)
      VALUES ($1, $2, $3, $4, $5)
      RETURNING id, order_id, tracking_number, carrier, shipped_at, items, created_at`,
@@ -31,8 +33,9 @@ export interface ShippedQuantity {
   qty: number;
 }
 
-export const getTotalShippedByOrder = async (orderId: string): Promise<ShippedQuantity[]> => {
-  const result = await pool.query<{ items: ShipmentItem[] }>(
+export const getTotalShippedByOrder = async (orderId: string, client?: PoolClient): Promise<ShippedQuantity[]> => {
+  const db = client || pool;
+  const result = await db.query<{ items: ShipmentItem[] }>(
     `SELECT items
      FROM shipments
      WHERE order_id = $1`,
@@ -48,4 +51,18 @@ export const getTotalShippedByOrder = async (orderId: string): Promise<ShippedQu
   }
 
   return Object.entries(totals).map(([sku, qty]) => ({ sku, qty }));
+};
+
+export const findByOrderId = async (orderId: string, client?: PoolClient): Promise<Shipment[]> => {
+  const db = client || pool;
+  const result = await db.query<Shipment>(
+    'SELECT * FROM shipments WHERE order_id = $1',
+    [orderId]
+  );
+  return result.rows;
+};
+
+export const deleteByOrderId = async (orderId: string, client?: PoolClient): Promise<void> => {
+  const db = client || pool;
+  await db.query('DELETE FROM shipments WHERE order_id = $1', [orderId]);
 };

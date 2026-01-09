@@ -1,6 +1,1 @@
-fastapi
-uvicorn[standard]
-sqlalchemy
-asyncpg
-pydantic-settings
-python-dotenv
+greenlet==3.3.0

@@ -1,24 +1,40 @@
-from fastapi import FastAPI, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
-from app.database import get_db
+"""
+main.py
+=======
+FastAPI Application Entrypoint.
+"""
 
-app = FastAPI()
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from app.routers import bol
+
+# Initialize FastAPI app
+app = FastAPI(
+    title="HSUS Order Status API",
+    description="Backend API for BOL (Bill of Lading) management",
+    version="2.0.0"
+)
+
+# CORS Middleware (allow all origins for development)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include routers
+app.include_router(bol.router, prefix="/api")
+
 
 @app.get("/")
 async def root():
-    return {"message": "Hello from Python Cloud Run!"}
+    """Health check endpoint."""
+    return {"status": "ok", "message": "HSUS Order Status API v2.0"}
 
-@app.get("/test-db")
-async def test_db(db: AsyncSession = Depends(get_db)):
-    try:
-        # 執行查詢
-        result = await db.execute(text("SELECT version();"))
-        version = result.scalar()
-        return {
-            "status": "success", 
-            "message": "✅ Database Connected Successfully!",
-            "version": version
-        }
-    except Exception as e:
-        return {"status": "error", "detail": str(e)}
+
+@app.get("/health")
+async def health():
+    """Health check for Cloud Run."""
+    return {"status": "healthy"}

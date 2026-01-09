@@ -4,15 +4,12 @@ This document is the **Single Source of Truth** for AI assistants working on the
 
 ## 1. Golden Standards 🏆
 
-Based on the verified **BOL Entry Tool** (`src/services/BolService.ts`), the following patterns are the Project Standard:
-
 ### Service Layer (`src/services/`)
 *   **Pattern**: Use **Classes** with `static async` methods.
-*   **Responsibility**: Encapsulate all business logic and database orchestration.
+*   **Responsibility**: Encapsulate business logic. **NEVER** write SQL in Services.
 *   **Transactions**:
-    *   **MUST** use `BEGIN`...`COMMIT`/`ROLLBACK` for any write operation affecting multiple tables.
-    *   **MUST** use `pool.connect()` to get a dedicated client for transactions.
-    *   **MUST** use `try/catch/finally` to ensure `client.release()`.
+    *   **MUST** handle `BEGIN`/`COMMIT`/`ROLLBACK`.
+    *   **MUST** pass the `PoolClient` to Repositories via Dependency Injection.
 *   **Example**:
     ```typescript
     export class BolService {
@@ -20,7 +17,9 @@ Based on the verified **BOL Entry Tool** (`src/services/BolService.ts`), the fol
             const client = await pool.connect();
             try {
                 await client.query('BEGIN');
-                // ... operations ...
+                // Pass client to repositories
+                await orderRepo.updateStatus(data.id, 'SHIPPED', client);
+                await shipmentRepo.create(data.shipment, client);
                 await client.query('COMMIT');
             } catch (e) {
                 await client.query('ROLLBACK');
@@ -33,9 +32,11 @@ Based on the verified **BOL Entry Tool** (`src/services/BolService.ts`), the fol
     ```
 
 ### Repository Layer (`src/repositories/`)
-*   **Pattern**: Functional exports (e.g., `findByOrderNumber`). 
-*   **Note**: While `BolService` implemented direct SQL for speed, **Core Domain Entities** (Orders, Shipments) should ideally utilize `src/repositories/` to avoid query duplication.
-*   **SQL Rule**: **Native SQL** with Parameterized Queries (`$1, $2`) is Mandatory. No ORMs.
+*   **Pattern**: Functional exports.
+*   **Responsibility**: All SQL queries live here.
+*   **Dependency Injection**: Every function **MUST** accept an optional `client: PoolClient`.
+    *   `const db = client || pool;`
+*   **SQL Rule**: **Native SQL** with Parameterized Queries (`$1, $2`).
 
 ### Controller Layer (`src/controllers/`)
 *   **Pattern**: Functional Express handlers.
